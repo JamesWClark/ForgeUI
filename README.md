@@ -1,5 +1,63 @@
 # Stable Diffusion WebUI Forge
 
+## Local Production Runtime
+
+This fork's Windows baseline is Python 3.10.11, PyTorch 2.9.1+cu130,
+torchvision 0.24.1+cu130, and bitsandbytes 0.50.2 in a private `.venv`. Start
+Forge with `run-forge.bat`; this is the supported application entry point. It
+validates the runtime before opening Chrome in incognito mode on port 7861, then
+delegates to `webui.bat`. Do not launch `webui.bat` directly because it does not
+perform the production runtime guard. Native PyTorch SDPA and CUDA malloc are
+enabled.
+
+For a fresh clone, install Python 3.10.11 and a current NVIDIA driver, then run:
+
+```powershell
+git clone https://github.com/JamesWClark/ForgeUI.git
+cd ForgeUI
+powershell -ExecutionPolicy Bypass -File .\Install-ForgeRuntime.ps1
+.\run-forge.bat
+```
+
+The tested system used an RTX 3090 Ti and NVIDIA driver 595.97. The PyTorch wheel
+contains its CUDA 13.0 runtime, so a system CUDA toolkit is not required. Runtime
+pins are in `requirements_runtime.txt` and `webui.settings.bat`; the installer
+can validate an existing environment with `-ValidateOnly`.
+
+Models, embeddings, and `styles_integrated.csv` live in this checkout. Settings,
+ADetailer data, cache, and outputs live under `data`. `.venv`, `data`, models,
+extensions, and the separate `kohya_ss` and `express` applications are
+intentionally excluded from Git and require separate backups. A moved virtual
+environment must be recreated because Windows entry points and activation
+scripts contain absolute paths.
+
+The dependency list reproduces the promoted core runtime but is not a complete
+hash-locked snapshot of every transitive or extension package. The promoted
+environment has known `pip check` conflicts involving the upstream pydantic and
+protobuf pins; see `CHANGELOG.md`.
+
+## Fork And Upstream
+
+`origin` is this fork and `upstream` is the original Forge repository with push
+disabled. If upstream development resumes, merge it into the fork deliberately:
+
+```powershell
+git fetch upstream
+git switch main
+git merge upstream/main
+# Resolve conflicts, run Install-ForgeRuntime.ps1 -ValidateOnly, and test Forge.
+git push origin main
+```
+
+Do not use an upstream pull as an installer or allow it to overwrite the local
+runtime files without review. Keep the runtime commit/tag available so rollback
+does not depend on the current state of either repository.
+
+Native PyTorch SDPA, CUDA malloc, Queue loading, and a 1024 MB inference reserve
+are the current baseline. Manual SDXL comparisons found lower warm latency at
+512x512 and approximate parity at 896x1152. No experimental compiler or
+attention patch is enabled.
+
 Stable Diffusion WebUI Forge is a platform on top of [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) (based on [Gradio](https://www.gradio.app/) <a href='https://github.com/gradio-app/gradio'><img src='https://img.shields.io/github/stars/gradio-app/gradio'></a>) to make development easier, optimize resource management, speed up inference, and study experimental features.
 
 The name "Forge" is inspired from "Minecraft Forge". This project is aimed at becoming SD WebUI's Forge.

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
+import sys
 import time
 
 from fastapi import Request
@@ -25,6 +28,65 @@ initialize.imports()
 initialize.check_versions()
 
 initialize.initialize()
+
+
+def _find_chrome_executable():
+    candidates = []
+    override_path = os.getenv("FORGE_CHROME_PATH") or os.getenv("CHROME_PATH")
+    if override_path:
+        candidates.append(override_path)
+
+    if os.name == "nt":
+        for command in ("chrome", "chrome.exe"):
+            resolved_path = shutil.which(command)
+            if resolved_path:
+                candidates.append(resolved_path)
+
+        for env_var in ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"):
+            base_path = os.environ.get(env_var)
+            if base_path:
+                candidates.append(os.path.join(base_path, "Google", "Chrome", "Application", "chrome.exe"))
+    elif sys.platform == "darwin":
+        candidates.append("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        resolved_path = shutil.which("google-chrome")
+        if resolved_path:
+            candidates.append(resolved_path)
+    else:
+        for command in ("google-chrome", "google-chrome-stable", "chromium-browser", "chromium", "chrome"):
+            resolved_path = shutil.which(command)
+            if resolved_path:
+                candidates.append(resolved_path)
+
+    seen_paths = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+
+        normalized_path = os.path.normcase(os.path.normpath(candidate))
+        if normalized_path in seen_paths:
+            continue
+
+        seen_paths.add(normalized_path)
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def _open_browser(url, chrome_incognito=False):
+    if chrome_incognito:
+        chrome_path = _find_chrome_executable()
+        if chrome_path:
+            try:
+                subprocess.Popen([chrome_path, "--incognito", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return
+            except OSError as exc:
+                print(f"Chrome incognito auto-launch failed ({exc}); falling back to the default browser.")
+        else:
+            print("Chrome incognito auto-launch requested, but Chrome was not found; falling back to the default browser.")
+
+    import webbrowser
+    webbrowser.open(url)
 
 
 def _handle_exception(request: Request, e: Exception):
@@ -90,11 +152,14 @@ def webui_worker():
         gradio_auth_creds = list(initialize_util.get_gradio_auth_creds()) or None
 
         auto_launch_browser = False
+        use_chrome_incognito = False
         if os.getenv('SD_WEBUI_RESTARTING') != '1':
             if shared.opts.auto_launch_browser == "Remote" or cmd_opts.autolaunch:
                 auto_launch_browser = True
             elif shared.opts.auto_launch_browser == "Local":
                 auto_launch_browser = not cmd_opts.webui_is_non_local
+
+            use_chrome_incognito = auto_launch_browser and cmd_opts.autolaunch_chrome_incognito
 
         from modules_forge.forge_canvas.canvas import canvas_js_root_path
 
@@ -107,7 +172,7 @@ def webui_worker():
             ssl_verify=cmd_opts.disable_tls_verify,
             debug=cmd_opts.gradio_debug,
             auth=gradio_auth_creds,
-            inbrowser=auto_launch_browser,
+            inbrowser=auto_launch_browser and not use_chrome_incognito,
             prevent_thread_lock=True,
             allowed_paths=cmd_opts.gradio_allowed_path + [canvas_js_root_path],
             app_kwargs={
@@ -117,6 +182,11 @@ def webui_worker():
             },
             root_path=f"/{cmd_opts.subpath}" if cmd_opts.subpath else "",
         )
+
+        if use_chrome_incognito:
+            launch_url = share_url if cmd_opts.share and share_url else local_url
+            if launch_url:
+                _open_browser(launch_url, chrome_incognito=True)
 
         startup_timer.record("gradio launch")
 

@@ -16,6 +16,10 @@ __pycache__
 /SwinIR/*
 /repositories
 /venv
+/.venv/
+/data/
+/kohya_ss/
+/express/
 /tmp
 /output
 /model.ckpt
@@ -26,7 +30,6 @@ __pycache__
 /outputs
 /config.json
 /log
-/webui.settings.bat
 /embeddings
 /styles.csv
 /params.txt

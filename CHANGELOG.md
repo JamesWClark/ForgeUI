@@ -1,3 +1,31 @@
+## Local Production Fork - 2026-09-21
+
+### Runtime
+* Promoted the Windows Python 3.10.11 runtime with PyTorch 2.9.1+cu130,
+  torchvision 0.24.1+cu130, CUDA runtime 13.0, and bitsandbytes 0.50.2.
+* Added `run-forge.bat` as the guarded production entry point, checkout-relative
+  model paths, and a production `data` directory for settings, cache, and output.
+* The production launcher delegates to `webui.bat` only after runtime validation;
+  direct `webui.bat` launches do not enforce the production runtime contract.
+* Added isolated `.venv` and user-site settings, CUDA malloc, native SDPA, API access,
+  port 7861, and Chrome incognito auto-launch.
+* Added `Install-ForgeRuntime.ps1` and `requirements_runtime.txt` so a fresh
+  clone can recreate and validate the promoted core runtime.
+
+### Local Changes
+* Added `--autolaunch-chrome-incognito`, including Chrome discovery and fallback
+  to the default browser when Chrome cannot be launched.
+* Updated Forge's automatic bitsandbytes target from 0.45.3 to 0.50.2.
+* Kept models, embeddings, settings, outputs, extensions, and auxiliary
+  applications outside source control while documenting their backup boundary.
+
+### Known Issues
+* `pip check` reports existing conflicts: albumentations 1.4.24 requires
+  pydantic 2.9.2 or newer; mediapipe 0.10.14 requires protobuf 4.25.3 or newer
+  below 5; and onnx 1.17.0 requires protobuf 3.20.2 or newer. Forge startup and
+  CUDA validation pass, but these conflicts remain part of the promoted state.
+
+
 ## 1.10.1
 
 ### Bug Fixes:
