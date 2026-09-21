@@ -24,12 +24,12 @@ contains its CUDA 13.0 runtime, so a system CUDA toolkit is not required. Runtim
 pins are in `requirements_runtime.txt` and `webui.settings.bat`; the installer
 can validate an existing environment with `-ValidateOnly`.
 
-Models, embeddings, and `styles_integrated.csv` live in this checkout. Settings,
-ADetailer data, cache, and outputs live under `data`. `.venv`, `data`, models,
-extensions, and the separate `kohya_ss` and `express` applications are
-intentionally excluded from Git and require separate backups. A moved virtual
-environment must be recreated because Windows entry points and activation
-scripts contain absolute paths.
+Models, embeddings, `styles_integrated.csv`, and generated `outputs` live at the
+checkout root. Settings, ADetailer data, and cache live under `data`. `.venv`,
+`data`, `outputs`, models, extensions, and the separate `kohya_ss` and `express`
+applications are intentionally excluded from Git and require separate backups.
+A moved virtual environment must be recreated because Windows entry points and
+activation scripts contain absolute paths.
 
 The dependency list reproduces the promoted core runtime but is not a complete
 hash-locked snapshot of every transitive or extension package. The promoted

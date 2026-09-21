@@ -4,7 +4,11 @@
 * Promoted the Windows Python 3.10.11 runtime with PyTorch 2.9.1+cu130,
   torchvision 0.24.1+cu130, CUDA runtime 13.0, and bitsandbytes 0.50.2.
 * Added `run-forge.bat` as the guarded production entry point, checkout-relative
-  model paths, and a production `data` directory for settings, cache, and output.
+  model paths, a production `data` directory for settings and cache, and a
+  repository-root `outputs` directory for generated files.
+* Added `--output-dir` so generated output defaults can be located independently
+  of `--data-dir`; the production launcher sets it to the checkout-root
+  `outputs` directory.
 * The production launcher delegates to `webui.bat` only after runtime validation;
   direct `webui.bat` launches do not enforce the production runtime contract.
 * Added isolated `.venv` and user-site settings, CUDA malloc, native SDPA, API access,
